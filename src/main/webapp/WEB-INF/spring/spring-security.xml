@@ -22,9 +22,6 @@
 			password-parameter="password" />
 			
 		<logout logout-success-url="/login?logout"  />
-		
-		<!-- enable csrf protection -->
-		<csrf/>
 	</http>
  
 	<!-- Select users and user_roles from database -->
@@ -34,7 +31,7 @@
 		  users-by-username-query=
 		    "select id, password, true from users where id=?"
 		  authorities-by-username-query=
-		    "select u.id, ur.role from users u, user_roles ur where u.id = ? and ur.email = u.email" />
+		    "select u.id, ur.role from users u, user_roles ur where u.id = ? and ur.email = u.id" />
 	  </authentication-provider>
 	</authentication-manager>
 </beans:beans>

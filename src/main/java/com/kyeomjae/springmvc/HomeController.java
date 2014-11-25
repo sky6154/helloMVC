@@ -12,11 +12,16 @@ import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.ModelAndView;
 
 import com.kyeomjae.springmvc.domain.Level;
 import com.kyeomjae.springmvc.domain.User;
@@ -64,14 +69,18 @@ public class HomeController {
 
 	public void add() {
 		this.userService.deleteAll();
-		
-		List<User> users = Arrays.asList(
-				new User("bumjin", 		"박범진", "p1", "user1@ksug.org", Level.BASIC, MIN_LOGCOUNT_FOR_SILVER - 1, 0), //49, 0
-				new User("joytouch", 	"강명성", "p2", "user2@ksug.org", Level.BASIC, MIN_LOGCOUNT_FOR_SILVER, 0), //50, 0
-				new User("erwins", 		"신승한", "p3", "user3@ksug.org", Level.SILVER, 60, MIN_RECCOMEND_FOR_GOLD - 1), //60, 29
-				new User("madnite1", 	"이상호", "p4", "user4@ksug.org", Level.SILVER, 60, MIN_RECCOMEND_FOR_GOLD), //60, 30
-				new User("green", 		"오민규", "p5", "user5@ksug.org", Level.GOLD, 100, Integer.MAX_VALUE)
-			);
+
+		List<User> users = Arrays.asList(new User("bumjin", "박범진", "p1",
+				"user1@ksug.org", Level.BASIC, MIN_LOGCOUNT_FOR_SILVER - 1, 0), // 49,
+																				// 0
+				new User("joytouch", "강명성", "p2", "user2@ksug.org",
+						Level.BASIC, MIN_LOGCOUNT_FOR_SILVER, 0), // 50, 0
+				new User("erwins", "신승한", "p3", "user3@ksug.org", Level.SILVER,
+						60, MIN_RECCOMEND_FOR_GOLD - 1), // 60, 29
+				new User("madnite1", "이상호", "p4", "user4@ksug.org",
+						Level.SILVER, 60, MIN_RECCOMEND_FOR_GOLD), // 60, 30
+				new User("green", "오민규", "p5", "user5@ksug.org", Level.GOLD,
+						100, Integer.MAX_VALUE));
 		this.userService.add(users.get(0));
 		this.userService.add(users.get(1));
 		this.userService.add(users.get(2));
@@ -83,18 +92,69 @@ public class HomeController {
 	public String get(Locale locale, Model model,
 			@RequestParam(value = "id", required = true) String id) {
 		this.add();
-		
+
 		User user = this.userService.get(id);
 		model.addAttribute("user", user);
 		return "userInfo";
 	}
-	
+
 	@RequestMapping(value = "/getall", method = RequestMethod.GET)
 	public String getAll(Locale locale, Model model) {
 		this.add();
-		
+
 		List<User> users = this.userService.getAll();
 		model.addAttribute("users", users);
 		return "usersInfo";
+	}
+
+	@RequestMapping(value = "/login", method = RequestMethod.GET)
+	public ModelAndView login(
+			@RequestParam(value = "error", required = false) String error,
+			@RequestParam(value = "logout", required = false) String logout,
+			ModelAndView model) {
+//		ModelAndView model = new ModelAndView();
+		if (error != null) {
+			model.addObject("error", "Invalid username and password!");
+		}
+
+		if (logout != null) {
+			model.addObject("msg", "You've been logged out successfully.");
+		}
+		model.setViewName("login");
+
+		return model;
+
+	}
+
+	// for 403 access denied page
+	@RequestMapping(value = "/403", method = RequestMethod.GET)
+	public ModelAndView accesssDenied(ModelAndView model) {
+		// check if user is login
+		Authentication auth = SecurityContextHolder.getContext()
+				.getAuthentication();
+
+		if (!(auth instanceof AnonymousAuthenticationToken)) {
+			UserDetails userDetail = (UserDetails) auth.getPrincipal();
+			model.addObject("username", userDetail.getUsername());
+		}
+
+		model.setViewName("403");
+		return model;
+	}
+
+	@RequestMapping(value = "/myinfo", method = RequestMethod.GET)
+	public ModelAndView myinfo(ModelAndView model) {
+		// check if user is login
+		Authentication auth = SecurityContextHolder.getContext()
+				.getAuthentication();
+
+		if (!(auth instanceof AnonymousAuthenticationToken)) {
+			UserDetails userDetail = (UserDetails) auth.getPrincipal();
+			User user = this.userService.get(userDetail.getUsername());
+			model.addObject("user", user);
+		}
+
+		model.setViewName("myinfo");
+		return model;
 	}
 }
